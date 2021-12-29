@@ -15,7 +15,7 @@ def dice_coeff(input: Tensor, target: Tensor, reduce_batch_first: bool = False, 
             sets_sum = 2 * inter
 
         return (2 * inter + epsilon) / (sets_sum + epsilon)
-    else:
+    else: #batch 때문에 dim은 3에 해당함. batch 단위로 dice를 구하도록 만들어줌.
         # compute and average metric for each batch element
         dice = 0
         for i in range(input.shape[0]):

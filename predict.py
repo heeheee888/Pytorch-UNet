@@ -12,6 +12,22 @@ from utils.data_loading import BasicDataset
 from unet import UNet
 from utils.utils import plot_img_and_mask
 
+def dice_score(pred, target, smooth = 1e-5):
+
+
+    # intersection = (pred * target).sum(dim=(2,3))
+    # union = pred.sum(dim=(2,3)) + target.sum(dim=(2,3))
+
+
+    intersection = (pred * target).sum()
+    union = pred.sum() + target.sum()
+    
+    # dice coefficient
+    dice = 2.0 * (intersection + smooth) / (union + smooth)
+    
+    
+    return dice
+
 def predict_img(net,
                 full_img,
                 device,
@@ -25,10 +41,12 @@ def predict_img(net,
     with torch.no_grad():
         output = net(img)
 
-        if net.n_classes > 1:
-            probs = F.softmax(output, dim=1)[0]
-        else:
-            probs = torch.sigmoid(output)[0]
+        probs = output[0]
+
+        # if net.n_classes > 1:
+        #     probs = F.softmax(output, dim=1)[0]
+        # else:
+        #     probs = torch.sigmoid(output)[0]
 
         tf = transforms.Compose([
             transforms.ToPILImage(),
@@ -81,7 +99,8 @@ if __name__ == '__main__':
     in_files = args.input
     out_files = get_output_filenames(args)
 
-    net = UNet(n_channels=3, n_classes=2)
+    net = UNet(n_channels=1, n_classes=1, bilinear=True)
+    #net = UNet(n_channels=3, n_classes=2)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Loading model {args.model}')
@@ -92,22 +111,39 @@ if __name__ == '__main__':
 
     logging.info('Model loaded!')
 
+    ds = 0 #dice score 합
+
     for i, filename in enumerate(in_files):
         logging.info(f'\nPredicting image {filename} ...')
         img = Image.open(filename)
-
+        label = Image.open(f'./test/mask/{filename[7:]}')
+        #label = Image.open(f'./test/mask/{filename[17:-4]}.tif')
+        label = np.array(label)
+        label = label/255
         mask = predict_img(net=net,
                            full_img=img,
                            scale_factor=args.scale,
                            out_threshold=args.mask_threshold,
                            device=device)
+        
+        # print('3', mask[256][256])
+        # print('4', label.max(), label.min())
+
+        #mask = (mask >0.5).float()
+        ddd = dice_score(mask, label)
+        ds += ddd
 
         if not args.no_save:
             out_filename = out_files[i]
+            #print(out_filename)
             result = mask_to_image(mask)
-            result.save(out_filename)
+            out_f = out_filename[:7] + 'result/'+out_filename[7:]
+            #print(out_f)
+            result.save(out_f)
             logging.info(f'Mask saved to {out_filename}')
 
         if args.viz:
             logging.info(f'Visualizing results for image {filename}, close to continue...')
             plot_img_and_mask(img, mask)
+    
+    print(ds/100)

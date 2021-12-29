@@ -10,12 +10,13 @@ from torch.utils.data import Dataset
 
 
 class BasicDataset(Dataset):
-    def __init__(self, images_dir: str, masks_dir: str, scale: float = 1.0, mask_suffix: str = ''):
+    def __init__(self, images_dir: str, masks_dir: str, scale: float = 1.0, mask_suffix: str = '', transform = None):
         self.images_dir = Path(images_dir)
         self.masks_dir = Path(masks_dir)
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
         self.scale = scale
         self.mask_suffix = mask_suffix
+        self.transform = transform
 
         self.ids = [splitext(file)[0] for file in listdir(images_dir) if not file.startswith('.')]
         if not self.ids:
@@ -31,6 +32,7 @@ class BasicDataset(Dataset):
         newW, newH = int(scale * w), int(scale * h)
         assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
         pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
+        
         img_ndarray = np.asarray(pil_img)
 
         if img_ndarray.ndim == 2 and not is_mask:
@@ -66,8 +68,20 @@ class BasicDataset(Dataset):
         assert img.size == mask.size, \
             'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
 
-        img = self.preprocess(img, self.scale, is_mask=False)
-        mask = self.preprocess(mask, self.scale, is_mask=True)
+        img = self.transform(img)
+        mask = self.transform(mask)
+
+        img = self.preprocess(img, self.scale, is_mask=False) #[1,256,256]
+        mask = self.preprocess(mask, self.scale, is_mask=True) #[256,256]
+
+
+        
+        # #channel이 3인거 보기
+        # img1 = np.zeros((3,256,256))
+        # print(img[1,:,:])
+        # for i in range(3):
+        #     img1[i,:,:] = img[1]
+
 
         return {
             'image': torch.as_tensor(img.copy()).float().contiguous(),
