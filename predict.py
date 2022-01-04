@@ -137,7 +137,7 @@ if __name__ == '__main__':
             out_filename = out_files[i]
             #print(out_filename)
             result = mask_to_image(mask)
-            out_f = out_filename[:7] + 'result/'+out_filename[7:]
+            out_f = out_filename[:7] + 'result12/'+out_filename[7:]
             #print(out_f)
             result.save(out_f)
             logging.info(f'Mask saved to {out_filename}')

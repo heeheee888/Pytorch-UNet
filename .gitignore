@@ -1,8 +1,11 @@
 *.pyc
 data/
 __pycache__/
-checkpoints/
+checkpoints*/
 *.pth
 *.jpg
 venv/
 .idea/
+.ipynb_checkpoints
+wandb
+test/

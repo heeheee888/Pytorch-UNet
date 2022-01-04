@@ -25,8 +25,19 @@ import pdb
 
 dir_img = Path('./data/oi/')
 dir_mask = Path('./data/oi_mask/')
-dir_checkpoint = Path('./checkpoints2/')
-transform = transforms.Compose([transforms.RandomVerticalFlip(p = 0.5)])
+dir_checkpoint = Path('./checkpoints11/')
+
+transform = transforms.Compose([
+                                transforms.ColorJitter(brightness=0, contrast=0.4, saturation=0, hue=0)
+                                
+                                ])
+
+# transform = transforms.Compose([transforms.RandomHorizontalFlip(p = 0.5),
+#                                 transforms.RandomRotation((-5, 5)),
+#                                 transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.1, 1)),
+#                                 transforms.ColorJitter(brightness=0, contrast=0.4, saturation=0, hue=0)
+                                
+#                                 ])
 
 
 def train_net(net,
@@ -109,14 +120,15 @@ def train_net(net,
                 x1 = images.cpu().detach().numpy()
                 
 
-                #img debugging
+                # #img debugging
                 # img = np.zeros((256,256,3))
-                # for i in range(16):
+                # for i in range(1):
                 #     for ch in range(3):
                 #         img[:, :,ch] = x1[i]
                 #     cv2.imwrite('./debug_{}.png'.format(i),img*255)
 
                 true_masks = true_masks.to(device=device, dtype=torch.long)/255
+
 
 
                 #pdb.set_trace()
@@ -132,10 +144,10 @@ def train_net(net,
 
                 #image debugging
                 # img2 = np.zeros((256,256,3))
-                # for i2 in range(16):
+                # for i2 in range(1):
                 #     for ch2 in range(3):
                 #         img2[:, :,ch2] = x2[i2]
-                #     cv2.imwrite('./debug2_{}.png'.format(i2),img*255)
+                #     cv2.imwrite('./debug2_{}.png'.format(i2),img2*255)
                 #print(true_masks.dim())
                 #true_masks = true_masks.to(device=device, dtype=torch.long) #torch.long은 integer
 
