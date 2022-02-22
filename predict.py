@@ -112,6 +112,7 @@ if __name__ == '__main__':
     logging.info('Model loaded!')
 
     ds = 0 #dice score 합
+    #ds_np = []
 
     for i, filename in enumerate(in_files):
         logging.info(f'\nPredicting image {filename} ...')
@@ -132,12 +133,15 @@ if __name__ == '__main__':
         #mask = (mask >0.5).float()
         ddd = dice_score(mask, label)
         ds += ddd
+        # if (i+1)%20 == 0:
+        #     ds_np.append(ds/20)
+        #     ds = 0
 
         if not args.no_save:
             out_filename = out_files[i]
             #print(out_filename)
             result = mask_to_image(mask)
-            out_f = out_filename[:7] + 'result12/'+out_filename[7:]
+            out_f = out_filename[:7] + 'result25/'+out_filename[7:]
             #print(out_f)
             result.save(out_f)
             logging.info(f'Mask saved to {out_filename}')
@@ -146,4 +150,6 @@ if __name__ == '__main__':
             logging.info(f'Visualizing results for image {filename}, close to continue...')
             plot_img_and_mask(img, mask)
     
+    #print(ds/100)
+
     print(ds/100)

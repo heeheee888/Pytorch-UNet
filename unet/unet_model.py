@@ -26,9 +26,8 @@ class UNet(nn.Module):
         self.up4 = Up(128, 64, bilinear)
         self.outc = OutConv(64, n_classes)
 
-    def forward(self, x):
+    def forward(self, x): #[1,1,256,256]
         x1 = self.inc(x) #[1,64,256,256]
-
         # #train feature extraction check
         # out2 = x1.cpu().detach().numpy()
         # img = np.zeros((256,256,3))

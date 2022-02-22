@@ -8,6 +8,8 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 
+import cv2
+
 
 class BasicDataset(Dataset):
     def __init__(self, images_dir: str, masks_dir: str, scale: float = 1.0, mask_suffix: str = '', transform = None):
@@ -65,16 +67,23 @@ class BasicDataset(Dataset):
         mask = self.load(mask_file[0])
         img = self.load(img_file[0])
 
+        mask2 = np.array(mask)
+        img2 = np.array(img)
+        # mask = cv2.imread(mask)
+        # img = cv2.imread(img)
+
         assert img.size == mask.size, \
             'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
 
-        img = self.transform(img)
-        mask = self.transform(mask)
+        if self.transform:
+            augmented = self.transform(image = img2, mask = mask2)
+            img = Image.fromarray(augmented['image'])
+            mask = Image.fromarray(augmented['mask'])
+
+
 
         img = self.preprocess(img, self.scale, is_mask=False) #[1,256,256]
         mask = self.preprocess(mask, self.scale, is_mask=True) #[256,256]
-
-
         
         # #channel이 3인거 보기
         # img1 = np.zeros((3,256,256))
@@ -87,6 +96,12 @@ class BasicDataset(Dataset):
             'image': torch.as_tensor(img.copy()).float().contiguous(),
             'mask': torch.as_tensor(mask.copy()).long().contiguous()
         }
+
+        # return {
+
+        #     'image' : img,
+        #     'mask' : mask
+        # }
 
 
 class CarvanaDataset(BasicDataset):

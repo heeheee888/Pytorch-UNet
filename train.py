@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.transforms.transforms import ToTensor
 import wandb
 from torch import optim
 from torch.utils.data import DataLoader, random_split
@@ -17,6 +18,9 @@ from utils.dice_score import dice_loss
 from evaluate import evaluate
 from unet import UNet
 
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+
 import numpy as np
 import cv2
 
@@ -25,12 +29,18 @@ import pdb
 
 dir_img = Path('./data/oi/')
 dir_mask = Path('./data/oi_mask/')
-dir_checkpoint = Path('./checkpoints11/')
+dir_checkpoint = Path('./checkpoints23/')
 
-transform = transforms.Compose([
-                                transforms.ColorJitter(brightness=0, contrast=0.4, saturation=0, hue=0)
-                                
-                                ])
+transform = A.Compose([
+
+    #A.Rotate(1),
+    #A.RandomScale(0.2)
+    #A.Affine(translate_px = (-20,20))
+    #A.Affine(shear = (-3,3))
+    # ToTensorV2()
+
+
+])
 
 # transform = transforms.Compose([transforms.RandomHorizontalFlip(p = 0.5),
 #                                 transforms.RandomRotation((-5, 5)),
@@ -55,7 +65,7 @@ def train_net(net,
     # except (AssertionError, RuntimeError):
     #     dataset = BasicDataset(dir_img, dir_mask, img_scale)
 
-    dataset = BasicDataset(dir_img, dir_mask, img_scale, transform = transform)
+    dataset = BasicDataset(dir_img, dir_mask, img_scale)
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
@@ -68,7 +78,7 @@ def train_net(net,
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
-    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
+    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must', name = 'test')
     experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
                                   amp=amp))
@@ -199,13 +209,14 @@ def train_net(net,
                             histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
                             histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                        val_score = evaluate(net, val_loader, device)
+                        val_score, val_loss = evaluate(net, val_loader, device)
                         scheduler.step(val_score)
 
-                        logging.info('Validation Dice score: {}'.format(val_score))
+                        logging.info('Validation Dice score: {} / Validation Loss : {}'.format(val_score, val_loss))
                         experiment.log({
                             'learning rate': optimizer.param_groups[0]['lr'],
                             'validation Dice': val_score,
+                            'validation Loss' : val_loss,
                             'images': wandb.Image(images[0].cpu()),
                             'masks': {
                                 'true': wandb.Image(true_masks[0].float().cpu()),

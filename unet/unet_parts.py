@@ -71,7 +71,9 @@ class Up(nn.Module):
 class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(OutConv, self).__init__()
+        self.dropout = nn.Dropout2d(p = 0.5)
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
 
     def forward(self, x):
+        #x = self.dropout(x)
         return self.conv(x)
